@@ -154,8 +154,8 @@ def gatherPosts(url):
 
 		# Rating
 		rating_title = post.find(class_="voting-wjt__counter")["title"]
-		upvotes = int(rating_title.split("↑")[1].split(" ")[0])
-		downvotes = int(rating_title.split("↓")[1])
+		upvotes = float(rating_title.split("↑")[1].split(" ")[0])
+		downvotes = float(rating_title.split("↓")[1])
 		# Bookmarks
 		bookmarks = textToInteger(
 			post.find(class_="bookmark__counter").text
