@@ -11,5 +11,5 @@ def parsePage(url):
 		url = HABR + url
 	html = urllib.request.urlopen(url).read()
 	total_traffic["traffic"] += len(html)
-	soup = BeautifulSoup(html, "html.parser")
+	soup = BeautifulSoup(html, "html5lib")
 	return soup
