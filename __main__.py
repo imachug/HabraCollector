@@ -2,7 +2,7 @@ import os, json, chalk
 from .WebAPI import total_traffic
 from .LinkGatherer import gatherHubList, gatherPosts
 
-SAVE_LIMIT = 100
+SAVE_LIMIT = 500
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.makedirs("cache", exist_ok="True")
@@ -36,10 +36,26 @@ if os.path.exists("cache/gathered_posts.json"):
 else:
 	gathered_posts = set()
 
+if os.path.exists("cache/gathered_hubs.json"):
+	print(chalk.green("Getting gathered hubs list from cache"))
+	with open("cache/gathered_hubs.json") as f:
+		gathered_hubs = json.loads(f.read())
+else:
+	gathered_hubs = {}
+
 posts = []
 for hub in hubs:
 	print(chalk.green("Handling hub"), "#{}".format(chalk.yellow(hub["id"])))
-	url = hub["href"]
+
+	if hub["id"] not in gathered_hubs:
+		gathered_hubs[hub["id"]] = {
+			"full": False,
+			"url": hub["href"]
+		}
+	elif gathered_hubs[hub["id"]]["full"]:
+		continue
+
+	url = gathered_hubs[hub["id"]]["url"]
 	while url is not None:
 		print("URL:", chalk.blue(url), end="")
 		page_posts, url = gatherPosts(url)
@@ -54,6 +70,8 @@ for hub in hubs:
 			total_traffic["traffic"] // (1024 * 1024), "MiB traffic)"
 		)
 
+		gathered_hubs[hub["id"]]["url"] = url
+
 		if total_traffic["traffic"] >= 1024 * 1024 * 512:
 			print(chalk.red("Reached 0.5 GiB"))
 			raise SystemExit()
@@ -62,15 +80,21 @@ for hub in hubs:
 			print(chalk.green("Saving to disk"))
 			with open("cache/gathered_posts.json", "w") as f:
 				f.write(json.dumps(list(gathered_posts)))
+			with open("cache/gathered_hubs.json", "w") as f:
+				f.write(json.dumps(gathered_hubs))
 			file_name = "cache/posts{}.json".format(len(gathered_posts))
 			with open(file_name, "w") as f:
 				f.write(json.dumps(posts))
 			posts = []
 
+	gathered_hubs[hub["id"]]["full"] = True
+
 if posts != []:
 	print(chalk.green("Saving to disk"))
 	with open("cache/gathered_posts.json", "w") as f:
 		f.write(json.dumps(list(gathered_posts)))
+	with open("cache/gathered_hubs.json", "w") as f:
+		f.write(json.dumps(gathered_hubs))
 	file_name = "cache/posts{}.json".format(len(gathered_posts))
 	with open(file_name, "w") as f:
 		f.write(json.dumps(posts))
