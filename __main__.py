@@ -44,6 +44,7 @@ else:
 	gathered_hubs = {}
 
 posts = []
+expected_traffic = 0
 for hub in hubs:
 	print(chalk.green("Handling hub"), "#{}".format(chalk.yellow(hub["id"])))
 
@@ -57,7 +58,7 @@ for hub in hubs:
 
 	url = gathered_hubs[hub["id"]]["url"]
 	while url is not None:
-		print("URL:", chalk.blue(url), end="")
+		print("URL:", chalk.blue(url).ljust(60), end="")
 		page_posts, url = gatherPosts(url)
 		cnt = 0
 		for post in page_posts:
@@ -66,15 +67,16 @@ for hub in hubs:
 				posts.append(post)
 				cnt += 1
 		print(
-			" (+", cnt, "posts,",
-			total_traffic["traffic"] // (1024 * 1024), "MiB traffic)"
+			chalk.green("+{} posts".format(cnt).ljust(10)),
+			chalk.yellow("{} total".format(len(posts)).ljust(10)),
+			chalk.magenta(
+				"{} MiB traffic".format(
+					total_traffic["traffic"] // (1024 * 1024)
+				)
+			)
 		)
 
 		gathered_hubs[hub["id"]]["url"] = url
-
-		if total_traffic["traffic"] >= 1024 * 1024 * 512:
-			print(chalk.red("Reached 0.5 GiB"))
-			raise SystemExit()
 
 		if len(posts) >= SAVE_LIMIT:
 			print(chalk.green("Saving to disk"))
@@ -86,6 +88,16 @@ for hub in hubs:
 			with open(file_name, "w") as f:
 				f.write(json.dumps(posts))
 			posts = []
+
+		if total_traffic["traffic"] >= expected_traffic:
+			print(
+				chalk.red(
+					"Reached {} GiB".format(
+						expected_traffic / (1024 * 1024 * 1024)
+					)
+				)
+			)
+			expected_traffic += 1024 * 1024 * 512
 
 	gathered_hubs[hub["id"]]["full"] = True
 
