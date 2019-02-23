@@ -21,13 +21,15 @@ else:
 print()
 print()
 print("Found", len(hubs), "hubs:")
-# for hub in hubs:
-# 	print("#{}{}{}{}".format(
-# 		chalk.yellow(hub["id"].ljust(30)),
-# 		chalk.green(str(hub["subscribers"]).ljust(10)),
-# 		chalk.magenta(str(hub["rating"]).ljust(10)),
-# 		hub["name"]
-# 	))
+for hub in hubs:
+	print("#{}{}{}{}".format(
+		chalk.yellow(hub["id"].ljust(30)),
+		chalk.green(str(hub["subscribers"]).ljust(10)),
+		chalk.magenta(str(hub["rating"]).ljust(10)),
+		hub["name"]
+	))
+print()
+print()
 
 if os.path.exists("cache/gathered_posts.json"):
 	print(chalk.green("Getting gathered posts list from cache"))
@@ -44,7 +46,7 @@ else:
 	gathered_hubs = {}
 
 posts = []
-expected_traffic = 0
+expected_traffic = 1024 * 1024 * 512
 for hub in hubs:
 	print(chalk.green("Handling hub"), "#{}".format(chalk.yellow(hub["id"])))
 
