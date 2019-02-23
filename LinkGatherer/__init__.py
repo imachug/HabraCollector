@@ -178,9 +178,14 @@ def gatherPosts(url):
 
 		if not is_podcast:
 			# Rating
-			rating_title = post.find(class_="voting-wjt__counter")["title"]
-			upvotes = float(rating_title.split("↑")[1].split(" ")[0])
-			downvotes = float(rating_title.split("↓")[1])
+			rating_node = post.find(class_="voting-wjt__counter")
+			if rating_node is None:
+				upvotes = 0
+				downvotes = 0
+			else:
+				rating_title = rating_node["title"]
+				upvotes = float(rating_title.split("↑")[1].split(" ")[0])
+				downvotes = float(rating_title.split("↓")[1])
 			# Bookmarks
 			bookmarks = textToInteger(
 				post.find(class_="bookmark__counter").text
