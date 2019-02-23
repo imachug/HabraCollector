@@ -91,8 +91,59 @@ def gatherPosts(url):
 	for post in page.find_all(class_="post"):
 		# Article
 		is_article = bool(post.find(class_="preview-data__title-link"))
+		# Podcast
+		is_podcast = bool("podcast" in post["class"])
 
-		if not is_article:
+		if is_podcast:
+			# Podcast
+			# Normal post
+			# Title
+			address = (
+				post.find(class_="post_title")["href"]
+					.replace(HABR + "/ru/", "")
+					.rstrip("/")
+			)
+			title = post.find(class_="post_title").text.strip()
+			# Author
+			author = ""
+			# Date/time
+			date = parseDate(post.find(class_="published").text)
+			# Hubs
+			hubs = [
+				hub["href"].replace(HABR + "/ru/hub/", "").replace("/", "")
+				for hub in post.find_all(class_="hub")
+			]
+			is_blog = False
+			# Labels
+			is_translation = False
+			is_tutorial = False
+		elif is_article:
+			# Article
+			address = (
+				post.find(class_="preview-data__title-link")["href"]
+					.replace(HABR + "/ru/", "")
+					.rstrip("/")
+			)
+			title = post.find(class_="preview-data__title-link").text.strip()
+			# Author
+			author = ""
+			# Date/time
+			date = parseDate(
+				post.find(class_="preview-data__time-published").text
+			)
+			# Hubs
+			hubs = [
+				hub["href"].replace(HABR + "/ru/hub/", "").replace("/", "")
+				for hub in (
+					post.find(class_="preview-data__hubs")
+						.find_all(class_="list__item-link")
+				)
+			]
+			is_blog = True
+			# Labels
+			is_translation = False
+			is_tutorial = False
+		else:
 			# Normal post
 			# Title
 			address = (
@@ -124,55 +175,41 @@ def gatherPosts(url):
 			]
 			is_translation = "Перевод" in labels
 			is_tutorial = "Tutorial" in labels
-		else:
-			# Article
-			address = (
-				post.find(class_="preview-data__title-link")["href"]
-					.replace(HABR + "/ru/", "")
-					.rstrip("/")
-			)
-			title = post.find(class_="preview-data__title-link").text.strip()
-			# Author
-			author_href = ""
-			author = ""
-			# Date/time
-			date = parseDate(
-				post.find(class_="preview-data__time-published").text
-			)
-			# Hubs
-			hubs = [
-				hub["href"].replace(HABR + "/ru/hub/", "").replace("/", "")
-				for hub in (
-					post.find(class_="preview-data__hubs")
-						.find_all(class_="list__item-link")
-				)
-			]
-			is_blog = True
-			# Labels
-			is_translation = False
-			is_tutorial = False
 
-		# Rating
-		rating_title = post.find(class_="voting-wjt__counter")["title"]
-		upvotes = float(rating_title.split("↑")[1].split(" ")[0])
-		downvotes = float(rating_title.split("↓")[1])
-		# Bookmarks
-		bookmarks = textToInteger(
-			post.find(class_="bookmark__counter").text
-		)
-		# Views
-		views = textToInteger(
-			post.find(class_="post-stats__views-count").text
-		)
-		# Comments
-		comments_node = post.find(class_="post-stats__comments-count")
-		if comments_node is None:
-			comments = 0
+		if not is_podcast:
+			# Rating
+			rating_title = post.find(class_="voting-wjt__counter")["title"]
+			upvotes = float(rating_title.split("↑")[1].split(" ")[0])
+			downvotes = float(rating_title.split("↓")[1])
+			# Bookmarks
+			bookmarks = textToInteger(
+				post.find(class_="bookmark__counter").text
+			)
+			# Views
+			views = textToInteger(
+				post.find(class_="post-stats__views-count").text
+			)
+			# Comments
+			comments_node = post.find(class_="post-stats__comments-count")
+			if comments_node is None:
+				comments = 0
+			else:
+				comments = textToInteger(comments_node.text)
 		else:
-			comments = textToInteger(comments_node.text)
+			upvotes = 0
+			downvotes = 0
+			bookmarks = 0
+			comments = 0
+			# Views
+			parts = post.find(class_="content").text.split()
+			try:
+				views = int(parts[parts.index("прослушан") + 1])
+			except ValueError:
+				views = 0
 
 		posts.append({
 			"is_article": is_article,
+			"is_podcast": is_podcast,
 			"address": address,
 			"title": title,
 			"author": author,
@@ -185,7 +222,8 @@ def gatherPosts(url):
 			"downvotes": downvotes,
 			"bookmarks": bookmarks,
 			"views": views,
-			"comments": comments
+			"comments": comments,
+			"gather_date": gather_date.timestamp()
 		})
 
 	next_link = page.find(id="next_page")
