@@ -2,13 +2,18 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 
-WORKERS = 8
+WORKERS = 15
 
 async def _parseAndLoad(session, url):
-	async with session.get(url) as res:
-		html = await res.text()
-		soup = BeautifulSoup(html, "html5lib")
-		return soup, len(html)
+	for _ in range(20):
+		try:
+			async with session.get(url) as res:
+				html = await res.text()
+				soup = BeautifulSoup(html, "html5lib")
+				return soup, len(html)
+		except Exception:
+			pass
+	raise ValueError("Too many retries")
 
 
 class Worker:
