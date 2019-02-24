@@ -118,4 +118,31 @@ if posts != []:
 		f.write(json.dumps(posts))
 	posts = []
 
+
+print()
+print()
+
+all_posts = []
+if os.path.exists("cache/all.txt"):
+	print(chalk.green("Getting all posts from cache"))
+	with open("cache/all.txt", encoding="utf-8") as f:
+		for post in f:
+			all_posts.append(json.loads(post))
+else:
+	print(chalk.green("Joining posts"))
+	all_posts = []
+	for file in os.listdir("cache"):
+		if file.startswith("posts"):
+			print("File:", chalk.blue(file))
+			with open("cache/{}".format(file)) as f:
+				all_posts += json.loads(f.read())
+	print(chalk.green("Saving"))
+	with open("cache/all.txt", "w", encoding="utf-8") as f:
+		for post in all_posts:
+			f.write(json.dumps(post, ensure_ascii=False) + "\n")
+
+print()
+print()
 print(chalk.green("Finished."))
+print("Total posts:  ", len(all_posts))
+print("Total authors:", len(set(post["author"] for post in all_posts)))
