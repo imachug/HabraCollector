@@ -3,6 +3,7 @@ import asyncio
 from bs4 import BeautifulSoup
 
 WORKERS = 15
+SPECULATIVE = 1
 
 async def _parseAndLoad(session, url):
 	for _ in range(20):
@@ -24,40 +25,38 @@ class Worker:
 
 	async def loop(self):
 		while True:
-			url, callback = await self._queue.get()
+			while self._queue == []:
+				await asyncio.sleep(0.001)
+
+			url, callback = self._queue.pop(0)
 			callback(*(await _parseAndLoad(self._session, url)))
-			self._queue.task_done()
 
 class WorkerManager:
 	def __init__(self):
-		self._queue = None
+		self._queue = []
 		self._cache = {}
 		self._cached = {}
 		self.total_traffic = 0
 
-	async def initWorkers(self):
-		self._session = aiohttp.ClientSession()
-		self._queue = asyncio.Queue()
-
 	async def startWorkers(self):
 		loops = []
 		for i in range(WORKERS):
-			loops.append(Worker(self._session, self._queue, i).loop())
+			session = aiohttp.ClientSession()
+			loops.append(Worker(session, self._queue, i).loop())
 		await asyncio.gather(*loops)
 
-	def enqueue(self, url):
+	def enqueue(self, url, force=False):
 		if url not in self._cache:
 			self._cache[url] = False  # in progress
 			self._cached[url] = asyncio.Event()
-			self._queue.put_nowait((url, lambda *args: self._save(url, *args)))
+			value = (url, lambda *args: self._save(url, *args))
+			if force:
+				self._queue.insert(0, value)
+			else:
+				self._queue.append(value)
 
 	def clearQueue(self):
-		try:
-			while True:
-				self._queue.get_nowait()
-				self._queue.task_done()
-		except Exception:
-			return
+		self._queue.clear()
 
 	def _save(self, url, soup, traffic):
 		self.total_traffic += traffic
@@ -67,7 +66,7 @@ class WorkerManager:
 	async def query(self, url):
 		if url not in self._cache:
 			# Haven't even started, enqueue
-			self.enqueue(url)
+			self.enqueue(url, force=True)
 		if not self._cache[url]:
 			# In progress
 			await self._cached[url].wait()  # wait for result

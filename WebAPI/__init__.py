@@ -1,4 +1,4 @@
-from .Worker import WorkerManager, WORKERS
+from .Worker import WorkerManager, WORKERS, SPECULATIVE
 import asyncio
 
 HABR = "https://habr.com"
@@ -36,7 +36,8 @@ async def parsePage(url):
 		last_speculative_page = int(cur_page)
 		worker_manager.clearQueue()
 
-	for i in range(WORKERS):
+	next_page = 0
+	for i in range(SPECULATIVE):
 		next_page = last_speculative_page + i + 1
 		next_url = url.replace(
 			"page{}".format(cur_page),

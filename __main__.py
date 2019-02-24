@@ -1,6 +1,6 @@
 import asyncio
 import os, json, chalk
-from .WebAPI import getTotalTraffic, initWorkers, workerLoop
+from .WebAPI import getTotalTraffic, workerLoop
 from .LinkGatherer import gatherHubList, gatherPosts
 
 SAVE_LIMIT = 500
@@ -128,7 +128,6 @@ async def sleep():
 		await asyncio.sleep(1)
 
 async def main():
-	await initWorkers()
 	await asyncio.gather(sleep(), workerLoop(), mainLoop())
 
 try:
