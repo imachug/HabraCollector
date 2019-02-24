@@ -89,6 +89,10 @@ def gatherPosts(url):
 	page = parsePage(url)
 	gather_date = datetime.datetime.now()
 	for post in page.find_all(class_="post"):
+		# Skip Habr's voice
+		if post.find(class_="post__title_voice") is not None:
+			continue
+
 		# Article
 		is_article = bool(post.find(class_="preview-data__title-link"))
 		# Podcast
