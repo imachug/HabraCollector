@@ -47,8 +47,12 @@ else:
 
 posts = []
 expected_traffic = 1024 * 1024 * 512
-for hub in hubs:
-	print(chalk.green("Handling hub"), "#{}".format(chalk.yellow(hub["id"])))
+for i, hub in enumerate(hubs):
+	print(
+		chalk.green("Handling hub"),
+		"#{}".format(chalk.yellow(hub["id"])),
+		"{}/{}".format(chalk.cyan(str(i)), chalk.blue(str(len(hubs))))
+	)
 
 	if hub["id"] not in gathered_hubs:
 		gathered_hubs[hub["id"]] = {
