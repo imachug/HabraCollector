@@ -23,26 +23,29 @@ async def parsePage(url):
 		# Relative URL
 		url = HABR + url
 
+
+	cur_future = worker_manager.query(url)
+
 	# Speculative loading
 	if "page" in url:
 		cur_page = "".join([c for c in url.split("page")[1] if c.isdigit()])
+	else:
+		cur_page = 1
+	if last_speculative != url.split("page")[0]:
+		last_speculative = url.split("page")[0]
+		last_speculative_page = int(cur_page)
+		worker_manager.clearQueue()
 
-		if last_speculative != url.replace("page", ""):
-			last_speculative = url.replace("page", "")
-			last_speculative_page = int(cur_page)
+	for i in range(WORKERS):
+		next_page = last_speculative_page + i + 1
+		next_url = url.replace(
+			"page{}".format(cur_page),
+			"page{}".format(next_page)
+		)
+		worker_manager.enqueue(next_url)
 
-		awaites = []
-		for i in range(WORKERS):
-			next_page = last_speculative_page + i + 1
-			next_url = url.replace(
-				"page{}".format(cur_page),
-				"page{}".format(next_page)
-			)
-			awaites.append(worker_manager.enqueue(next_url))
+	last_speculative_page = next_page
 
-		await asyncio.gather(*awaites)
 
-		last_speculative_page = next_page
-
-	soup = await worker_manager.query(url)
+	soup = await cur_future
 	return soup

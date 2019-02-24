@@ -17,9 +17,10 @@ async def _parseAndLoad(session, url):
 
 
 class Worker:
-	def __init__(self, session, queue):
+	def __init__(self, session, queue, id):
 		self._session = session
 		self._queue = queue
+		self._id = id
 
 	async def loop(self):
 		while True:
@@ -40,15 +41,23 @@ class WorkerManager:
 
 	async def startWorkers(self):
 		loops = []
-		for _ in range(WORKERS):
-			loops.append(Worker(self._session, self._queue).loop())
+		for i in range(WORKERS):
+			loops.append(Worker(self._session, self._queue, i).loop())
 		await asyncio.gather(*loops)
 
-	async def enqueue(self, url):
+	def enqueue(self, url):
 		if url not in self._cache:
 			self._cache[url] = False  # in progress
 			self._cached[url] = asyncio.Event()
-			await self._queue.put((url, lambda *args: self._save(url, *args)))
+			self._queue.put_nowait((url, lambda *args: self._save(url, *args)))
+
+	def clearQueue(self):
+		try:
+			while True:
+				self._queue.get_nowait()
+				self._queue.task_done()
+		except Exception:
+			return
 
 	def _save(self, url, soup, traffic):
 		self.total_traffic += traffic
@@ -58,7 +67,7 @@ class WorkerManager:
 	async def query(self, url):
 		if url not in self._cache:
 			# Haven't even started, enqueue
-			await self.enqueue(url)
+			self.enqueue(url)
 		if not self._cache[url]:
 			# In progress
 			await self._cached[url].wait()  # wait for result
