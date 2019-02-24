@@ -45,13 +45,13 @@ def parseDate(date):
 
 
 # Returns a list of all hubs (their names, URLs and so on)
-def gatherHubList():
+async def gatherHubList():
 	hubs = []
 
 	url = "/ru/hubs/"
 
 	while True:
-		page = parsePage(url)
+		page = await parsePage(url)
 
 		# Parse page
 		for hub in page.find_all(class_="content-list__item_hubs"):
@@ -83,10 +83,10 @@ def gatherHubList():
 	return hubs
 
 
-def gatherPosts(url):
+async def gatherPosts(url):
 	posts = []
 
-	page = parsePage(url)
+	page = await parsePage(url)
 	gather_date = datetime.datetime.now()
 	for post in page.find_all(class_="post"):
 		# Article
